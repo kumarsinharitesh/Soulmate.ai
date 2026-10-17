@@ -362,7 +362,7 @@ export default function PersonDetailPage({ params }: { params: Promise<{ id: str
                           </div>
                           <div style={{flex: 1, minWidth: 0}}>
                             <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6, gap: 12}}>
-                              <Link href={`/people/${match.personId}`} style={{fontWeight: 700, color: 'var(--text-primary)', textDecoration: 'none', fontFamily: 'Playfair Display, serif', fontSize: '1rem', ':hover': {color: 'var(--accent-primary)'}}}>
+                              <Link href={`/people/${match.personId}`} style={{fontWeight: 700, color: 'var(--text-primary)', textDecoration: 'none', fontFamily: 'Playfair Display, serif', fontSize: '1rem'}}>
                                 {matchPerson?.name || match.personId}
                               </Link>
                               <span style={{

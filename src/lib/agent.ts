@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { PersonProfile, ScrapedLinkedIn, ScrapedInstagram, DateSession, DateMessage } from '@/types';
 import { AIProvider, resolveProvider } from '@/lib/providers';
+import { assessCompatibility } from '@/lib/compatibility';
 
 function getAI(apiKeyOverride?: string): GoogleGenerativeAI | null {
   const apiKey = apiKeyOverride || process.env.GEMINI_API_KEY;
@@ -232,6 +233,12 @@ Respond ONLY with valid JSON (no markdown):
   const now = new Date();
   const sharedTopic = agent1Profile.interests?.[0] || agent2Profile.interests?.[0] || 'growth and purpose';
   const sharedValue = agent1Profile.values?.[0] || agent2Profile.values?.[0] || 'authenticity';
+  const assessment = assessCompatibility(agent1Profile, agent2Profile, agent1Id, agent2Id);
+  const sharedInterest = assessment.sharedInterests[0] || agent1Profile.hobbies?.[0] || agent2Profile.hobbies?.[0] || sharedTopic;
+  const firstNeed = agent1Profile.needs?.[0] || 'emotional clarity';
+  const secondNeed = agent2Profile.needs?.[0] || 'shared curiosity';
+  const firstGoal = agent1Profile.lifeGoals?.[0] || 'a meaningful life';
+  const secondGoal = agent2Profile.lifeGoals?.[0] || 'a life with purpose';
 
   const messages: DateMessage[] = [
     {
@@ -278,20 +285,21 @@ Respond ONLY with valid JSON (no markdown):
     }
   ];
 
-  // A date should produce the same result for the same two profiles. Random scores
-  // make rankings jump on refresh and make the demo impossible to reproduce.
-  const fingerprint = `${agent1Id}:${agent2Id}`.split('').reduce((total, character) => total + character.charCodeAt(0), 0);
-  const score = 78 + (fingerprint % 13);
+  // Do not reuse a generic script. Each turn names signals taken from this pair.
+  messages[0].content = `I noticed ${sharedValue} and ${sharedInterest} in your profile. I value ${firstNeed}; how do you make space for that when life gets busy?`;
+  messages[1].content = `For me, ${secondNeed} matters most. I can be ${agent2Profile.energyLevel} energy, but ${agent2Profile.hobbies?.[0] || 'quiet time'} keeps me grounded. How do you protect time for ${firstGoal}?`;
+  messages[2].content = `My ${agent1Profile.energyLevel} rhythm can get intense, so ${agent1Profile.hobbies?.[0] || 'time away from screens'} is how I reset. A date around ${sharedInterest} would tell us more than polished answers.`;
+  messages[3].content = `That feels honest. I am working toward ${secondGoal}, and I would want a partner who can celebrate it while still saying clearly what they need.`;
+  messages[4].content = `We share ${sharedValue}; our ${agent1Profile.socialBattery} and ${agent2Profile.socialBattery} social styles would still need real coordination. I would rather talk through that early.`;
+  messages[5].content = `Let’s try ${sharedInterest}, leave room for an unplanned conversation, and see whether the everyday rhythm feels as good as the values do.`;
 
   return {
     messages,
-    compatibilityScore: score,
-    compatibilitySummary: `${agent1Profile.name} and ${agent2Profile.name} established quick rapport around ${sharedValue} and their shared passion for ${sharedTopic}. Both agents communicated with emotional clarity and mutual respect, indicating high potential for both intellectual stimulation and supportive partnership.`,
+    compatibilityScore: assessment.score,
+    compatibilitySummary: assessment.summary,
     highlights: [
-      `Immediate mutual respect anchored in ${sharedValue}`,
-      `Engaged discussion comparing their daily rhythms and recharge practices`,
-      `Both expressed a desire for unfiltered emotional honesty over performative charm`,
-      `Natural chemistry blending ${agent1Profile.name}'s vision with ${agent2Profile.name}'s warmth`
+      ...assessment.reasons,
+      `They chose ${sharedInterest} as a concrete first-date setting`,
     ]
   };
 }
@@ -370,22 +378,13 @@ Respond ONLY with valid JSON array:
         s => s.person1Id === candidate.id || s.person2Id === candidate.id
       );
 
-      const p1Vals = new Set((personProfile.values || []).map(v => v.toLowerCase()));
-      const sharedVals = (candidate.profile.values || []).filter(v => p1Vals.has(v.toLowerCase()));
-
-      let score = 70 + sharedVals.length * 4;
-      if (existing) score = existing.compatibilityScore;
-      score = Math.min(95, Math.max(60, score));
+      const assessment = assessCompatibility(personProfile, candidate.profile, personProfile.name, candidate.id);
 
       return {
         personId: candidate.id,
-        score,
-        summary: `${personProfile.name} and ${candidate.profile.name} connect on ${sharedVals.join(', ') || 'shared ambition'}, creating a dynamic relationship balance.`,
-        reasons: [
-          `Shared alignment on ${sharedVals[0] || 'purpose'}`,
-          `Complementary energy dynamics between ${personProfile.energyLevel} and ${candidate.profile.energyLevel}`,
-          `Strong respect for each other's dedication to their craft`
-        ]
+        score: existing?.compatibilityScore ?? assessment.score,
+        summary: existing?.compatibilitySummary ?? assessment.summary,
+        reasons: existing?.highlights ?? assessment.reasons,
       };
     })
     .sort((a, b) => b.score - a.score);

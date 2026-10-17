@@ -1,6 +1,7 @@
 import { Person, DateSession, CompatibilityRanking, RankedMatch, PersonProfile } from '@/types';
 import { SEED_PEOPLE } from '@/lib/seed-data';
 import { SEED_DATE_SESSIONS } from '@/lib/seed-dates';
+import { assessCompatibility } from '@/lib/compatibility';
 
 // Preserve in-memory store across hot module reloading in development
 const globalStore = globalThis as unknown as {
@@ -23,10 +24,9 @@ const people = globalStore.__dating_people;
 const dateSessions = globalStore.__dating_sessions;
 const rankings = globalStore.__dating_rankings;
 
-function calculateCompatibility(
-  p1: PersonProfile,
-  p2: PersonProfile
-): { score: number; summary: string; reasons: string[] } {
+function calculateCompatibility(p1: PersonProfile, p2: PersonProfile) {
+  return assessCompatibility(p1, p2);
+  /*
   // 1. Shared values calculation
   const p1Values = new Set((p1.values || []).map(v => v.toLowerCase()));
   const p2Values = (p2.values || []).map(v => v.toLowerCase());
@@ -94,7 +94,7 @@ function calculateCompatibility(
     `Compatible social dynamics between ${p1.socialBattery} and ${p2.socialBattery} temperaments`,
   ];
 
-  return { score, summary, reasons };
+  return { score, summary, reasons }; */
 }
 
 export function ensureInitialized(): void {
