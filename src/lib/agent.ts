@@ -2,16 +2,16 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { PersonProfile, ScrapedLinkedIn, ScrapedInstagram, DateSession, DateMessage } from '@/types';
 import { AIProvider, resolveProvider } from '@/lib/providers';
 
-function getAI(): GoogleGenerativeAI | null {
-  const apiKey = process.env.GEMINI_API_KEY;
+function getAI(apiKeyOverride?: string): GoogleGenerativeAI | null {
+  const apiKey = apiKeyOverride || process.env.GEMINI_API_KEY;
   if (!apiKey || apiKey === 'your_gemini_api_key_here' || apiKey.trim() === '') {
     return null;
   }
   return new GoogleGenerativeAI(apiKey);
 }
 
-async function generateSarvamJson(prompt: string): Promise<string> {
-  const apiKey = process.env.SARVAM_API_KEY?.trim();
+async function generateSarvamJson(prompt: string, apiKeyOverride?: string): Promise<string> {
+  const apiKey = apiKeyOverride?.trim() || process.env.SARVAM_API_KEY?.trim();
   if (!apiKey) throw new Error('SARVAM_API_KEY is not configured');
   const response = await fetch('https://api.sarvam.ai/v1/chat/completions', {
     method: 'POST',
@@ -34,10 +34,11 @@ export async function analyzePersonProfile(
   linkedinData: ScrapedLinkedIn,
   instagramData: ScrapedInstagram,
   personName: string,
-  preferredProvider?: AIProvider
+  preferredProvider?: AIProvider,
+  apiKeyOverride?: string
 ): Promise<PersonProfile> {
-  const genAI = getAI();
-  const provider = resolveProvider(preferredProvider);
+  const genAI = getAI(apiKeyOverride);
+  const provider = preferredProvider && apiKeyOverride ? preferredProvider : resolveProvider(preferredProvider);
 
   if (provider !== 'fallback') {
     try {
@@ -90,7 +91,7 @@ For energyLevel use: "low", "medium", "high", or "very-high"
 For socialBattery use: "introvert", "ambivert", or "extrovert"`;
 
       const text = provider === 'sarvam'
-        ? await generateSarvamJson(prompt)
+        ? await generateSarvamJson(prompt, apiKeyOverride)
         : (await model!.generateContent(prompt)).response.text().trim();
 
       const cleanText = text

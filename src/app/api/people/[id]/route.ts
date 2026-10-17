@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getPerson, setPerson } from '@/lib/store';
 import { scrapeLinkedIn, scrapeInstagram } from '@/lib/scraper';
 import { analyzePersonProfile } from '@/lib/agent';
+import { hasConfiguredProvider } from '@/lib/providers';
 
 export async function GET(
   request: Request,
@@ -32,6 +33,18 @@ export async function POST(
     return NextResponse.json(person);
   }
 
+  const body = await request.json().catch(() => ({}));
+  const requestedProvider = body.aiProvider === 'gemini' || body.aiProvider === 'sarvam' || body.aiProvider === 'fallback'
+    ? body.aiProvider
+    : person.aiProvider;
+  const suppliedKey = typeof body.apiKey === 'string' ? body.apiKey.trim() : '';
+  if (suppliedKey.length > 500) {
+    return NextResponse.json({ error: 'The supplied API key is not valid.' }, { status: 400 });
+  }
+  if (requestedProvider && requestedProvider !== 'fallback' && !suppliedKey && !hasConfiguredProvider(requestedProvider)) {
+    return NextResponse.json({ error: `Add a ${requestedProvider === 'sarvam' ? 'Sarvam' : 'Gemini'} API key to test that provider.` }, { status: 400 });
+  }
+
   // Start analysis
   setPerson({ ...person, status: 'analyzing' });
 
@@ -45,7 +58,8 @@ export async function POST(
       linkedinData,
       instagramData,
       person.name,
-      person.aiProvider
+      requestedProvider,
+      suppliedKey || undefined
     );
 
     const updatedPerson = {

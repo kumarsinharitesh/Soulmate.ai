@@ -15,6 +15,7 @@ export default function AddPersonPage() {
   const [error, setError] = useState('');
   const [providers, setProviders] = useState<string[]>(['fallback']);
   const [aiProvider, setAiProvider] = useState('fallback');
+  const [apiKey, setApiKey] = useState('');
 
   useEffect(() => {
     fetch('/api/providers').then(async response => response.ok ? response.json() : null).then(data => {
@@ -47,6 +48,8 @@ export default function AddPersonPage() {
       // Then trigger analysis
       const analyzeRes = await fetch(`/api/people/${person.id}`, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ aiProvider, apiKey }),
       });
       const analyzed = await analyzeRes.json();
 
@@ -146,6 +149,23 @@ export default function AddPersonPage() {
                     Choose the engine that will create this person&apos;s profile analysis.
                   </p>
                 </div>
+
+                {aiProvider !== 'fallback' && (
+                  <div>
+                    <label className="label">Test API key (optional)</label>
+                    <input
+                      className="input"
+                      type="password"
+                      autoComplete="off"
+                      placeholder={aiProvider === 'sarvam' ? 'Sarvam API key' : 'Gemini API key'}
+                      value={apiKey}
+                      onChange={e => setApiKey(e.target.value)}
+                    />
+                    <p style={{fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 4, fontFamily: 'DM Sans, sans-serif'}}>
+                      Used only for this analysis request. It is never saved or shown again.
+                    </p>
+                  </div>
+                )}
 
                 {error && (
                   <div style={{

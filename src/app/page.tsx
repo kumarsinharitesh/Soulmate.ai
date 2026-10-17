@@ -14,6 +14,7 @@ export default function HomePage() {
   const [error, setError] = useState<string | null>(null);
   const [providers, setProviders] = useState<string[]>(['fallback']);
   const [aiProvider, setAiProvider] = useState('fallback');
+  const [apiKey, setApiKey] = useState('');
 
   useEffect(() => {
     fetch('/api/providers').then(async response => response.ok ? response.json() : null).then(data => {
@@ -37,10 +38,20 @@ export default function HomePage() {
       });
       const data = await res.json();
       if (res.ok) {
+        const analysisResponse = await fetch(`/api/people/${data.id}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ aiProvider, apiKey }),
+        });
+        const analysis = await analysisResponse.json();
+        if (!analysisResponse.ok) {
+          throw new Error(analysis.error || 'Profile was added but analysis could not start.');
+        }
         setSuccess(data.id);
         setLinkedinUrl('');
         setInstagramUrl('');
         setName('');
+        setApiKey('');
       } else {
         setError(data.error || 'We could not add that profile. Please check both public profile links.');
       }
@@ -243,6 +254,20 @@ export default function HomePage() {
                     ))}
                   </select>
                 </div>
+                {aiProvider !== 'fallback' && (
+                  <div>
+                    <label className="label">Test API key (optional)</label>
+                    <input
+                      className="input"
+                      type="password"
+                      autoComplete="off"
+                      placeholder={aiProvider === 'sarvam' ? 'Sarvam API key' : 'Gemini API key'}
+                      value={apiKey}
+                      onChange={e => setApiKey(e.target.value)}
+                    />
+                    <p className={styles.formNote}>Used for this analysis only. It is never stored.</p>
+                  </div>
+                )}
                 {error && <p role="alert" className={styles.formError}>{error}</p>}
                 <p className={styles.formNote}>Use only profiles you are authorized to add. We use the two links you provide to build a compatibility preview.</p>
                 <button

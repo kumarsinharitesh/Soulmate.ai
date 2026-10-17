@@ -12,6 +12,12 @@ export function getAvailableProviders(): AIProvider[] {
   return providers;
 }
 
+export function hasConfiguredProvider(provider: AIProvider): boolean {
+  if (provider === 'gemini') return hasUsableKey(process.env.GEMINI_API_KEY);
+  if (provider === 'sarvam') return hasUsableKey(process.env.SARVAM_API_KEY);
+  return true;
+}
+
 export function resolveProvider(preferred?: string): AIProvider {
   const available = getAvailableProviders();
   const configured = (process.env.AI_PROVIDER || 'auto').toLowerCase();

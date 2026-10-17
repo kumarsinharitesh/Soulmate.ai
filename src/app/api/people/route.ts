@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { getPeople, setPerson } from '@/lib/store';
-import { getAvailableProviders } from '@/lib/providers';
 
 function parseProfileUrl(value: unknown, platform: 'linkedin' | 'instagram'): URL | null {
   if (typeof value !== 'string' || value.length > 2_000) return null;
@@ -34,9 +33,6 @@ export async function POST(request: Request) {
       { error: 'Enter an HTTPS LinkedIn /in/ profile URL and an HTTPS public Instagram profile URL.' },
       { status: 400 }
     );
-  }
-  if (selectedProvider && !getAvailableProviders().includes(selectedProvider)) {
-    return NextResponse.json({ error: 'That AI provider is not configured on this deployment.' }, { status: 400 });
   }
 
   // Generate ID from name or URL
