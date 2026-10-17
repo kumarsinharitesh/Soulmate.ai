@@ -63,7 +63,7 @@ export default function DatesPage() {
       const res = await fetch('/api/date', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ person1Id: selectedP1, person2Id: selectedP2 }),
+        body: JSON.stringify({ person1Id: selectedP1, person2Id: selectedP2, force: true }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Date could not be started');

@@ -20,7 +20,9 @@ export function assessCompatibility(p1: PersonProfile, p2: PersonProfile, id1 = 
 
   const battery = p1.socialBattery === p2.socialBattery ? 14 : p1.socialBattery === 'ambivert' || p2.socialBattery === 'ambivert' ? 12 : 9;
   const energy = p1.energyLevel === p2.energyLevel ? 13 : new Set([p1.energyLevel, p2.energyLevel]).size === 2 && ['high', 'very-high'].includes(p1.energyLevel) && ['high', 'very-high'].includes(p2.energyLevel) ? 11 : 8;
-  const score = Math.max(54, Math.min(96, 43 + Math.min(18, sharedValues.length * 6) + Math.min(12, sharedInterests.length * 4) + Math.min(8, sharedGoals.length * 4) + Math.min(8, reciprocalNeeds) + battery + energy + (pairHash(id1, id2) % 7 - 3)));
+  // The small deterministic adjustment avoids arbitrary ties after the evidence
+  // score is calculated, while keeping the profile-derived signals dominant.
+  const score = Math.max(54, Math.min(96, 43 + Math.min(18, sharedValues.length * 6) + Math.min(12, sharedInterests.length * 4) + Math.min(8, sharedGoals.length * 4) + Math.min(8, reciprocalNeeds) + battery + energy + (pairHash(id1, id2) % 17 - 8)));
   const anchor = sharedValues[0] || sharedInterests[0] || `${p1.values?.[0] || 'authenticity'} and ${p2.values?.[0] || 'growth'}`;
   return {
     score,

@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 export async function POST(request: Request) {
   const body = await request.json();
-  const { person1Id, person2Id } = body;
+  const { person1Id, person2Id, force } = body;
 
   if (!person1Id || !person2Id) {
     return NextResponse.json(
@@ -33,7 +33,7 @@ export async function POST(request: Request) {
 
   // Check if date session already exists
   const existing = getDateSessionsForPair(person1Id, person2Id);
-  if (existing && existing.status === 'complete') {
+  if (existing && existing.status === 'complete' && !force) {
     return NextResponse.json(existing);
   }
 
